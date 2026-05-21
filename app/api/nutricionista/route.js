@@ -5,8 +5,10 @@ export async function POST(request) {
     const body = await request.json();
     const apiKey = "AIzaSyCW2klqfS70q9vvwCuCLRPtNPn6Hre8LF8";
     
-    // Mudamos o modelo para 'gemini-pro' que é o mais estável
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // Trocamos a URL para a versão estável 'v1' e o modelo para 'gemini-1.5-flash'
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -22,6 +24,6 @@ export async function POST(request) {
 
     return NextResponse.json({ resposta: data.candidates[0].content.parts[0].text });
   } catch (error) {
-    return NextResponse.json({ error: "Erro no servidor" }, { status: 500 });
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
