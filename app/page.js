@@ -8,31 +8,32 @@ export default function Home() {
 
   const enviarPergunta = async () => {
     setLoading(true);
+    setResposta('Pensando...');
     try {
       const res = await fetch('/api/nutricionista', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: pergunta }),
+        body: JSON.stringify({ messages: [{ role: "user", content: pergunta }] }),
       });
       const data = await res.json();
-      setResposta(data.resposta);
+      setResposta(data.resposta || data.error);
     } catch (error) {
-      setResposta("Erro ao buscar resposta.");
+      setResposta("Erro ao conectar com a API.");
     }
     setLoading(false);
   };
 
   return (
-    <main style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+    <main style={{ padding: '20px', color: 'white' }}>
       <h1>Nutricionista IA</h1>
-      <textarea 
+      <input 
         value={pergunta} 
         onChange={(e) => setPergunta(e.target.value)}
-        placeholder="Pergunte sobre sua dieta..."
-        style={{ width: '100%', height: '100px', margin: '10px 0' }}
+        placeholder="Digite sua dúvida..."
+        style={{ width: '100%', padding: '10px', color: 'black' }}
       />
-      <button onClick={enviarPergunta} disabled={loading}>
-        {loading ? 'Pensando...' : 'Enviar'}
+      <button onClick={enviarPergunta} style={{ marginTop: '10px', padding: '10px' }}>
+        {loading ? 'Aguarde...' : 'Enviar'}
       </button>
       <div style={{ marginTop: '20px', whiteSpace: 'pre-line' }}>
         {resposta}
