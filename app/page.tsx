@@ -1,65 +1,105 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect, useRef } from "react";
+
+export default function NutricionistaIA() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [dietaGerada, setDietaGerada] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    setMessages([
+      {
+        role: "assistant",
+        content: `Olá! Sou seu nutricionista virtual 🥗\n\nJá tenho seu perfil completo:\n\n📋 **Seus dados:**\n• Peso: 75kg | Altura: 1,83m | IMC: 22.4\n• Diabetes Tipo 1\n• Trabalha das 08h às 18h (almoço às 13h)\n• Dificuldade de comer pela manhã\n• Muita fome no horário do almoço\n• Não come cebola e similares\n\nClique em **"Gerar Meu Plano Alimentar"** para receber sua dieta personalizada, ou me faça qualquer pergunta sobre alimentação! 💪`,
+      },
+    ]);
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  const gerarDieta = async () => {
+    const pergunta = "Crie um plano alimentar semanal completo e detalhado para mim, considerando todo o meu perfil. Inclua horários, alimentos, quantidades, dicas para controle glicêmico e estratégias para lidar com a dificuldade de comer pela manhã e a fome no almoço.";
+    await enviarMensagem(pergunta, true);
+    setDietaGerada(true);
+  };
+
+  const enviarMensagem = async (textoOverride = null, isDieta = false) => {
+    const texto = textoOverride || input.trim();
+    if (!texto || loading) return;
+    if (!textoOverride) setInput("");
+
+    const novaMensagem = { role: "user", content: texto };
+    const novasMessages = [...messages, novaMensagem];
+    setMessages(novasMessages);
+    setLoading(true);
+
+    try {
+      const apiMessages = novasMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const response = await fetch("/api/nutricionista", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Erro na API");
+      }
+
+      setMessages((prev) => [...prev, { role: "assistant", content: data.resposta }]);
+    } catch (e) {
+      console.error(e);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "❌ Erro ao conectar. Tente novamente." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
+  };
+
+  const sugestoes = [
+    "Quais alimentos devo evitar com diabetes tipo 1?",
+    "O que comer antes de dormir para não ter hipoglicemia?",
+    "Como montar meu almoço em 10 minutos?",
+    "Lanches rápidos para comer no trabalho?",
+  ];
+
+  const renderMensagem = (text) => {
+    return text.split("\n").map((line, i) => {
+      if (line.startsWith("**") && line.endsWith("**")) {
+        return <p key={i} style={{ fontWeight: 700, margin: "8px 0 2px", color: "#1a472a" }}>{line.replace(/\*\*/g, "")}</p>;
+      }
+      if (line.startsWith("• ") || line.startsWith("- ")) {
+        return <p key={i} style={{ margin: "2px 0", paddingLeft: 8 }}>{line}</p>;
+      }
+      if (line.startsWith("#")) {
+        return <p key={i} style={{ fontWeight: 800, fontSize: 15, margin: "10px 0 4px", color: "#1a472a" }}>{line.replace(/#/g, "").trim()}</p>;
+      }
+      if (line === "") return <br key={i} />;
+      return <p key={i} style={{ margin: "2px 0" }}>{line}</p>;
+    });
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
-}
+    <div style={{
+      minHeight: "100vh",
+      background: "linear
